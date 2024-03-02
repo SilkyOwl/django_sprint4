@@ -1,9 +1,12 @@
-from django.urls import path
-from .views import about, rules
+from typing import List
 
-app_name = 'pages'
+from django.urls import URLPattern, path
 
-urlpatterns = [
-    path('about/', about, name='about'),
-    path('rules/', rules, name='rules'),
+from . import views
+
+app_name: str = "pages"
+
+urlpatterns: List[URLPattern] = [
+    path("about/", views.AboutTemplateView.as_view(), name="about"),
+    path("rules/", views.RulesTemplateView.as_view(), name="rules"),
 ]

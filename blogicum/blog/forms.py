@@ -1,67 +1,58 @@
-# from django import forms
+from django import forms
+from django.utils import timezone
 
-# from django.core.exceptions import ValidationError
-# from .models import Post
-# from django.core.mail import send_mail
+from .models import Comment, Post
 
-
-# class PostForm(forms.ModelForm):
-#     class Meta:
-#         model = Post
-#         exclude = ('author',)
-#         widgets = {
-#             'post': forms.DateInput(attrs={'type': 'date'})
-#         }
+from .models import Profile
+from django.contrib.auth.models import User
 
 
-# class CommentsForm(forms.ModelForm):
-#     class Meta:
-#         model = Post
-#         fields = ('text',)
+class CreatePostForm(forms.ModelForm):
+    pub_date = forms.DateTimeField(
+        initial=timezone.now,
+        required=True,
+        widget=forms.DateTimeInput(
+            attrs={
+                "type": "datetime-local",
+            },
+            format="%Y-%m-%dT%H:%M",
+        ),
+    )
+
+    class Meta:
+        model = Post
+        fields = (
+            "title",
+            "image",
+            "text",
+            "pub_date",
+            "location",
+            "category",
+            "is_published",
+        )
 
 
+class CreateCommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ("text",)
 
 
-
-# # from django import forms
-
-# # from django.core.exceptions import ValidationError
-# # from .models import Birthday, Congratulation
-# # from django.core.mail import send_mail
-
-# # BEATLES = {'Джон Леннон', 'Пол Маккартни', 'Джордж Харрисон', 'Ринго Старр'}
-
-
-# # class BirthdayForm(forms.ModelForm):
-# #     class Meta:
-# #         model = Birthday
-# #         exclude = ('author',)
-# #         widgets = {
-# #             'birthday': forms.DateInput(attrs={'type': 'date'})
-# #         }
-
-# #     def clean_first_name(self):
-# #         first_name = self.cleaned_data['first_name']
-# #         return first_name.split()[0]
-
-# #     def clean(self):
-# #         super().clean()
-# #         first_name = self.cleaned_data['first_name']
-# #         last_name = self.cleaned_data['last_name']
-# #         if f'{first_name} {last_name}' in BEATLES:
-# #             send_mail(
-# #                 subject='Another Beatles member',
-# #                 message=f'{first_name} {last_name} пытался опубликовать запись!',
-# #                 from_email='birthday_form@acme.not',
-# #                 recipient_list=['admin@acme.not'],
-# #                 fail_silently=True,
-# #             )
-# #             raise ValidationError(
-# #                 'Мы тоже любим Битлз, но введите, пожалуйста, настоящее имя!'
-# #             )
+class ProfileEditForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = [
+            'first_name',
+            'last_name',
+        ]
 
 
-# # class CongratulationForm(forms.ModelForm):
-# #     class Meta:
-# #         model = Congratulation
-# #         fields = ('text',)
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username',
+                  'email',
+                  'password']
+        widgets = {
+            'password': forms.PasswordInput(),
+        }

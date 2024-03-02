@@ -11,7 +11,7 @@ STATICFILES_DIRS = [
 SECRET_KEY = 'django-insecure--vksl0bzuqo3+8@azw^sa=^8_(k^c$nt90vx0r8a8f3b%n#lt('
 
 
-DEBUG = True
+DEBUG = False
 
 
 ALLOWED_HOSTS = [
@@ -94,7 +94,7 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_L10N = True
+USE_L10N = False
 
 USE_TZ = True
 
@@ -105,10 +105,15 @@ STATICFILES_DIRS = [BASE_DIR / 'static_dev']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
 CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'
 
 
-# EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+# AUTH_USER_MODEL = "users.User"
+# LOGIN_REDIRECT_URL = "blog:index"
+# LOGIN_URL = "users:login"
 
-# EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+MEDIA_ROOT = BASE_DIR / "media/"
+MEDIA_URL = "/media/"
