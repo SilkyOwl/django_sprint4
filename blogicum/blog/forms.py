@@ -3,7 +3,6 @@ from django.utils import timezone
 
 from .models import Comment, Post
 
-from .models import Profile
 from django.contrib.auth.models import User
 
 
@@ -38,19 +37,12 @@ class CreateCommentForm(forms.ModelForm):
         fields = ("text",)
 
 
-class ProfileEditForm(forms.ModelForm):
-    class Meta:
-        model = Profile
-        fields = [
-            'first_name',
-            'last_name',
-        ]
-
-
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username',
+        fields = ['first_name',
+                  'last_name',
+                  'username',
                   'email',
                   'password']
         widgets = {

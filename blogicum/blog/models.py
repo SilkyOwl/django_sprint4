@@ -171,26 +171,3 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text
-
-
-class Profile(models.Model):
-    first_name = models.CharField('Имя', max_length=20)
-    last_name = models.CharField(
-        'Фамилия', max_length=20, help_text='Опциональное поле', blank=True
-    )
-    user = models.OneToOneField(
-        User,
-        verbose_name='Пользователь',
-        related_name='profile',
-        on_delete=models.CASCADE,
-    )
-
-    class Meta:
-        verbose_name = 'профиль'
-        verbose_name_plural = 'Профили'
-
-    def __str__(self):
-        return f'{self.first_name} {self.last_name}'
-
-    def get_absolute_url(self):
-        return reverse('profile', args=[str(self.id)])

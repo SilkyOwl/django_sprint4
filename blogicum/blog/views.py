@@ -15,9 +15,8 @@ from .forms import (
     CreateCommentForm,
     CreatePostForm,
     UserForm,
-    ProfileEditForm,
 )
-from .models import Category, Comment, Post, User, Profile
+from .models import Category, Comment, Post, User
 
 User = get_user_model()
 
@@ -215,12 +214,10 @@ class ProfileView(LoginRequiredMixin, View):
         template_name = 'blog/profile.html'
         if request.user.is_authenticated:
             user = request.user
-            profile, created = Profile.objects.get_or_create(user=user)
-            form = ProfileEditForm(instance=profile)
+            form = UserForm()
             posts = Post.objects.filter(author=user)
             context = {
                 'user': user,
-                'profile': profile,
                 'posts': posts,
                 'form': form,
             }
@@ -234,34 +231,30 @@ class ProfileView(LoginRequiredMixin, View):
         template_name = 'blog/profile.html'
         if request.user.is_authenticated:
             user = request.user
-            profile = user.profile
-            form = ProfileEditForm(request.POST, instance=profile)
+            form = UserForm(request.POST)
             if form.is_valid():
                 form.save()
-                return redirect('blog:profile')  # Исправлено 'blog:profile'
+                return redirect('blog:profile')  
             else:
-                # Если форма не валидна, показать ее с ошибками
                 context = {
                     'user': user,
-                    'profile': profile,
                     'form': form,
                 }
                 return render(request, template_name, context)
         else:
             # Если пользователь не авторизован, перенаправляем его (
             # на страницу входа или выводим сообщение об ошибке)
-            # Ваш код здесь
             pass
 
 
 class EditProfileView(LoginRequiredMixin, UpdateView):
-    model = Profile
+    model = User
     form_class = UserForm
     template_name = 'blog/user.html'
     success_url = reverse_lazy('blog:profile')
 
     def get_object(self, queryset=None):
-        return self.request.user.profile
+        return self.request.user
 
     def get_success_url(self):
         return reverse_lazy(
