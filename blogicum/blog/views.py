@@ -42,6 +42,22 @@ class CommentEditMixin:
     template_name = "blog/comment.html"
 
 
+class PostCreateView(PostsEditMixin, LoginRequiredMixin, CreateView):
+    form_class = CreatePostForm
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self) -> str:
+        return reverse(
+            "blog:profile",
+            kwargs={
+                "username": self.request.user.username,
+            },
+        )
+
+
 class PostDeleteView(PostsEditMixin, LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy("blog:index")
 
@@ -61,22 +77,6 @@ class PostUpdateView(PostsEditMixin, LoginRequiredMixin, UpdateView):
         if self.request.user != post.author:
             return redirect("blog:post_detail", pk=self.kwargs["pk"])
         return super().dispatch(request, *args, **kwargs)
-
-
-class PostCreateView(PostsEditMixin, LoginRequiredMixin, CreateView):
-    form_class = CreatePostForm
-
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        return super().form_valid(form)
-
-    def get_success_url(self) -> str:
-        return reverse(
-            "blog:profile",
-            kwargs={
-                "username": self.request.user.username,
-            },
-        )
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
@@ -207,12 +207,10 @@ class ProfileView(LoginRequiredMixin, View):
         template_name = "blog/profile.html"
         if request.user.is_authenticated:
             user = request.user
-            form = UserForm()
             posts = Post.objects.filter(author=user)
             context = {
                 'user': user,
                 'posts': posts,
-                'form': form,
             }
             return render(request, template_name, context)
         else:

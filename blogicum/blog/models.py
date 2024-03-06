@@ -1,7 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-# from django.contrib.auth.models import AnonymousUser
-
 
 from django.utils import timezone
 from django.urls import reverse
@@ -71,7 +69,8 @@ class Category(BaseModel):
 
     def get_absolute_url(self) -> str:
         return reverse(
-            "blog:category_posts", kwargs={"category_slug": self.slug}
+            "blog:category_posts",
+            kwargs={"category_slug": self.slug}
         )
 
 
@@ -131,18 +130,21 @@ class Post(BaseModel):
 
     @staticmethod
     def visible_posts_queryset():
-        filters = (models.Q(is_published=True)
-                   & models.Q(category__is_published=True)
-                   & models.Q(pub_date__lte=timezone.now())
-                   )
+        filters = (
+            models.Q(is_published=True)
+            & models.Q(category__is_published=True)
+            & models.Q(pub_date__lte=timezone.now())
+        )
         return Post.post_list.filter(filters)
 
     @staticmethod
     def post_details_queryset(author):
         if author.is_authenticated:
-            filters = (models.Q(author=author)
-                       | models.Q(is_published=True)
-                       & models.Q(category__is_published=True))
+            filters = (
+                models.Q(author=author)
+                | models.Q(is_published=True)
+                & models.Q(category__is_published=True)
+            )
         else:
             filters = (models.Q(is_published=True)
                        & models.Q(category__is_published=True))
@@ -164,6 +166,8 @@ class Post(BaseModel):
 
 
 class Comment(models.Model):
+    """Model representing comments on blog posts."""
+
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

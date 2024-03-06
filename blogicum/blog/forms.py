@@ -1,5 +1,6 @@
 from django import forms
 from django.utils import timezone
+from django.contrib.auth.forms import UserChangeForm
 
 from .models import Comment, Post
 
@@ -37,14 +38,14 @@ class CreateCommentForm(forms.ModelForm):
         fields = ("text",)
 
 
-class UserForm(forms.ModelForm):
+class UserForm(UserChangeForm):
+    password = None
+
     class Meta:
         model = User
-        fields = ['first_name',
-                  'last_name',
-                  'username',
-                  'email',
-                  'password']
-        widgets = {
-            'password': forms.PasswordInput(),
-        }
+        fields = [
+            'first_name',
+            'last_name',
+            'username',
+            'email',
+        ]
