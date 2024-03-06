@@ -10,7 +10,7 @@ from django.views.generic import (
     UpdateView,
     View,
 )
-from django.contrib.auth import get_user_model
+
 from .forms import (
     CreateCommentForm,
     CreatePostForm,
@@ -18,14 +18,12 @@ from .forms import (
 )
 from .models import Category, Comment, Post, User
 
-User = get_user_model()
-
 PAGINATED_BY = 10
 
 
 class PostsQuerySetMixin:
     def get_queryset(self):
-        return Post.post_list
+        return Post.visible_posts_queryset()
 
 
 class PostsEditMixin:
@@ -109,10 +107,8 @@ class CommentUpdateView(CommentEditMixin, LoginRequiredMixin, UpdateView):
     form_class = CreateCommentForm
 
     def dispatch(self, request, *args, **kwargs):
-        if (
-            self.request.user
-            != Comment.objects.get(pk=self.kwargs["comment_pk"]).author
-        ):
+        comment = get_object_or_404(Comment, pk=self.kwargs["comment_pk"])
+        if self.request.user != comment.author:
             return redirect("blog:post_detail", pk=self.kwargs["pk"])
 
         return super().dispatch(request, *args, **kwargs)
@@ -162,7 +158,8 @@ class BlogIndexListView(PostsQuerySetMixin, ListView):
     paginate_by = PAGINATED_BY
 
     def get_queryset(self):
-        return super().get_queryset().annotate(comment_count=Count("comments"))
+        return super().get_queryset().annotate(
+            comment_count=Count("comments"))
 
 
 class BlogCategoryListView(PostsQuerySetMixin, ListView):
@@ -187,7 +184,7 @@ class BlogCategoryListView(PostsQuerySetMixin, ListView):
         )
 
 
-class PostDetailView(PostsQuerySetMixin, DetailView):
+class PostDetailView(DetailView):
     model = Post
     template_name = "blog/detail.html"
 
@@ -201,17 +198,13 @@ class PostDetailView(PostsQuerySetMixin, DetailView):
 
     def get_queryset(self):
         return (
-            super()
-            .get_queryset()
-            .prefetch_related(
-                "comments",
-            )
+            Post.post_details_queryset(author=self.request.user)
         )
 
 
 class ProfileView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        template_name = 'blog/profile.html'
+        template_name = "blog/profile.html"
         if request.user.is_authenticated:
             user = request.user
             form = UserForm()
@@ -223,18 +216,16 @@ class ProfileView(LoginRequiredMixin, View):
             }
             return render(request, template_name, context)
         else:
-            # Если пользователь не авторизован,перенаправляем его (
-            # на страницу входа или выводим сообщение об ошибке)
-            pass
+            return redirect('login')
 
     def post(self, request, *args, **kwargs):
-        template_name = 'blog/profile.html'
+        template_name = "blog/profile.html"
         if request.user.is_authenticated:
             user = request.user
             form = UserForm(request.POST)
             if form.is_valid():
                 form.save()
-                return redirect('blog:profile')  
+                return redirect("blog:profile")
             else:
                 context = {
                     'user': user,
@@ -242,16 +233,14 @@ class ProfileView(LoginRequiredMixin, View):
                 }
                 return render(request, template_name, context)
         else:
-            # Если пользователь не авторизован, перенаправляем его (
-            # на страницу входа или выводим сообщение об ошибке)
-            pass
+            return redirect('login')
 
 
 class EditProfileView(LoginRequiredMixin, UpdateView):
     model = User
     form_class = UserForm
-    template_name = 'blog/user.html'
-    success_url = reverse_lazy('blog:profile')
+    template_name = "blog/user.html"
+    success_url = reverse_lazy("blog:profile")
 
     def get_object(self, queryset=None):
         return self.request.user
