@@ -17,29 +17,16 @@ from .forms import (
     UserForm,
 )
 from .models import Category, Comment, Post, User
+from .mixins import (
+    CommentEditMixin,
+    PostsEditMixin,
+    SuccessUrlMixin,
+    VisiblePostsMixin,
+    PostDetailsMixin
+)
+
 
 PAGINATED_BY = 10
-
-
-class PostsQuerySetMixin:
-    def get_queryset(self):
-        return Post.visible_posts_queryset()
-
-
-class PostsEditMixin:
-    model = Post
-    template_name = "blog/create.html"
-    queryset = Post.objects.select_related(
-        "author",
-        "location",
-        "category"
-    )
-
-
-class CommentEditMixin:
-    model = Comment
-    pk_url_kwarg = "comment_pk"
-    template_name = "blog/comment.html"
 
 
 class PostCreateView(PostsEditMixin, LoginRequiredMixin, CreateView):
@@ -52,9 +39,7 @@ class PostCreateView(PostsEditMixin, LoginRequiredMixin, CreateView):
     def get_success_url(self) -> str:
         return reverse(
             "blog:profile",
-            kwargs={
-                "username": self.request.user.username,
-            },
+            kwargs={"username": self.request.user.username},
         )
 
 
@@ -79,7 +64,11 @@ class PostUpdateView(PostsEditMixin, LoginRequiredMixin, UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class CommentCreateView(LoginRequiredMixin, CreateView):
+class CommentCreateView(
+    LoginRequiredMixin,
+    SuccessUrlMixin,
+    CreateView
+):
     model = Comment
     form_class = CreateCommentForm
 
@@ -88,13 +77,13 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         form.instance.author = self.request.user
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})
 
-
-class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
-    def get_success_url(self):
-        return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})
+class CommentDeleteView(
+    CommentEditMixin,
+    LoginRequiredMixin,
+    SuccessUrlMixin,
+    DeleteView
+):
 
     def delete(self, request, *args, **kwargs):
         comment = get_object_or_404(Comment, pk=self.kwargs["comment_pk"])
@@ -103,7 +92,12 @@ class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-class CommentUpdateView(CommentEditMixin, LoginRequiredMixin, UpdateView):
+class CommentUpdateView(
+    CommentEditMixin,
+    LoginRequiredMixin,
+    SuccessUrlMixin,
+    UpdateView
+):
     form_class = CreateCommentForm
 
     def dispatch(self, request, *args, **kwargs):
@@ -113,11 +107,8 @@ class CommentUpdateView(CommentEditMixin, LoginRequiredMixin, UpdateView):
 
         return super().dispatch(request, *args, **kwargs)
 
-    def get_success_url(self):
-        return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})
 
-
-class AuthorProfileListView(PostsQuerySetMixin, ListView):
+class AuthorProfileListView(VisiblePostsMixin, ListView):
     model = Post
     template_name = "blog/profile.html"
     paginate_by = PAGINATED_BY
@@ -137,7 +128,7 @@ class AuthorProfileListView(PostsQuerySetMixin, ListView):
 
         return (
             super()
-            .get_queryset()
+            .visible_posts_queryset()
             .filter(author__username=self.kwargs["username"])
             .annotate(comment_count=Count("comments"))
             .order_by('-pub_date')
@@ -151,18 +142,18 @@ class AuthorProfileListView(PostsQuerySetMixin, ListView):
         return context
 
 
-class BlogIndexListView(PostsQuerySetMixin, ListView):
+class BlogIndexListView(VisiblePostsMixin, ListView):
     model = Post
     template_name = "blog/index.html"
     context_object_name = "post_list"
     paginate_by = PAGINATED_BY
 
     def get_queryset(self):
-        return super().get_queryset().annotate(
+        return super().visible_posts_queryset().annotate(
             comment_count=Count("comments"))
 
 
-class BlogCategoryListView(PostsQuerySetMixin, ListView):
+class BlogCategoryListView(VisiblePostsMixin, ListView):
     model = Post
     template_name = "blog/category.html"
     context_object_name = "post_list"
@@ -178,13 +169,13 @@ class BlogCategoryListView(PostsQuerySetMixin, ListView):
     def get_queryset(self):
         return (
             super()
-            .get_queryset()
+            .visible_posts_queryset()
             .filter(category__slug=self.kwargs["category_slug"])
             .annotate(comment_count=Count("comments"))
         )
 
 
-class PostDetailView(DetailView):
+class PostDetailView(DetailView, PostDetailsMixin):
     model = Post
     template_name = "blog/detail.html"
 
@@ -198,7 +189,7 @@ class PostDetailView(DetailView):
 
     def get_queryset(self):
         return (
-            Post.post_details_queryset(author=self.request.user)
+            super().post_details_queryset(author=self.request.user)
         )
 
 
@@ -213,8 +204,6 @@ class ProfileView(LoginRequiredMixin, View):
                 'posts': posts,
             }
             return render(request, template_name, context)
-        else:
-            return redirect('login')
 
     def post(self, request, *args, **kwargs):
         template_name = "blog/profile.html"
@@ -224,14 +213,11 @@ class ProfileView(LoginRequiredMixin, View):
             if form.is_valid():
                 form.save()
                 return redirect("blog:profile")
-            else:
-                context = {
-                    'user': user,
-                    'form': form,
-                }
-                return render(request, template_name, context)
-        else:
-            return redirect('login')
+            context = {
+                'user': user,
+                'form': form,
+            }
+            return render(request, template_name, context)
 
 
 class EditProfileView(LoginRequiredMixin, UpdateView):

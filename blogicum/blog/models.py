@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
-from django.utils import timezone
 from django.urls import reverse
 
 from config import MAX_LENGTH_NAME, MAX_TITLE_LENGTH
@@ -127,30 +126,6 @@ class Post(BaseModel):
         upload_to='img/')
     objects = models.Manager()
     post_list = PostManager()
-
-    @staticmethod
-    def visible_posts_queryset():
-        filters = (
-            models.Q(is_published=True)
-            & models.Q(category__is_published=True)
-            & models.Q(pub_date__lte=timezone.now())
-        )
-        return Post.post_list.filter(filters)
-
-    @staticmethod
-    def post_details_queryset(author):
-        if author.is_authenticated:
-            filters = (
-                models.Q(author=author)
-                | models.Q(is_published=True)
-                & models.Q(category__is_published=True)
-            )
-        else:
-            filters = (models.Q(is_published=True)
-                       & models.Q(category__is_published=True))
-        return Post.post_list.filter(filters).prefetch_related(
-            "comments",
-        )
 
     class Meta:
         verbose_name = 'публикация'
